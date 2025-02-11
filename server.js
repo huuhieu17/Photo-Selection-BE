@@ -9,13 +9,24 @@ const googleDriveRoutes = require('./routes/GoogleDriveRoutes');
 dotenv.config();
 
 const app = express();
-const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",");
+const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",").map(origin => origin.trim().replace(/\/$/, '')); // Remove trailing slashes;
+console.log("ALLOWED_ORIGINS:", process.env.ALLOWED_ORIGINS);
 
 app.use(cors({
     origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin) return callback(null, true);
+        
+        const originClean = origin.endsWith('/') 
+            ? origin.slice(0, -1) 
+            : origin;
+
+        if (allowedOrigins.some(allowed => {
+            return originClean === allowed ||
+                   originClean.startsWith(`${allowed}/`)
+        })) {
             callback(null, origin);
         } else {
+            console.log('Blocked Origin:', origin);
             callback(new Error("Not allowed by CORS"));
         }
     },
